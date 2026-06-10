@@ -1,0 +1,10 @@
+project_name    = "servicedesk"
+environment     = "demo"
+location        = "westeurope"
+deploy_services = false
+image_tag       = "latest"
+
+tags = {
+  owner   = "itqaanconsulting"
+  purpose = "portfolio"
+}

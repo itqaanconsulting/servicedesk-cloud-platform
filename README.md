@@ -1,8 +1,9 @@
 # ServiceDesk Cloud Platform
 
 [![Build](https://github.com/itqaanconsulting/servicedesk-cloud-platform/actions/workflows/build.yml/badge.svg)](https://github.com/itqaanconsulting/servicedesk-cloud-platform/actions/workflows/build.yml)
+[![Terraform](https://github.com/itqaanconsulting/servicedesk-cloud-platform/actions/workflows/terraform.yml/badge.svg)](https://github.com/itqaanconsulting/servicedesk-cloud-platform/actions/workflows/terraform.yml)
 
-Cloud-native service desk showcase built as independently deployable Java microservices. The project focuses on service boundaries, synchronous communication, resilience, observability and Kubernetes deployment.
+Cloud-native service desk showcase built as independently deployable Java microservices. The project focuses on service boundaries, synchronous communication, resilience, observability, Kubernetes deployment and infrastructure as code.
 
 ## Services
 
@@ -48,9 +49,9 @@ Each service owns its domain and database. The Ticket and Technician services pe
 - Prometheus, Grafana and Tempo
 - Resilience4j
 - Docker Compose
+- Kubernetes
+- Terraform and Azure Container Apps
 - GitHub Actions
-
-Planned platform capabilities include Kubernetes and Terraform.
 
 ## Build
 
@@ -192,10 +193,66 @@ Remove the local deployment while preserving the Docker images:
 kubectl delete -k k8s/base
 ```
 
-## Delivery Roadmap
+## Azure Infrastructure
 
-1. Deploy the observability stack inside Kubernetes.
-2. Provision a cloud environment using Terraform.
+The Terraform configuration in `infra/terraform/azure` provisions:
+
+- Azure Resource Group
+- Azure Container Registry with admin access disabled
+- User-assigned managed identity with the `AcrPull` role
+- Azure Container Apps environment with Log Analytics
+- PostgreSQL Flexible Server with separate ticket and technician databases
+- Three autoscaling Container Apps with health probes
+- Public ingress for Ticket Service and internal ingress for supporting services
+
+An Azure subscription, Terraform CLI and Azure CLI are only required for an actual deployment. GitHub Actions runs formatting and static validation without Azure credentials.
+
+Authenticate and create a local variables file:
+
+```powershell
+az login
+az account set --subscription "<subscription-id>"
+Copy-Item infra/terraform/azure/terraform.tfvars.example infra/terraform/azure/terraform.tfvars
+```
+
+Provision the shared infrastructure first. Service deployment is disabled by default because the private images do not exist yet:
+
+```powershell
+terraform -chdir=infra/terraform/azure init
+terraform -chdir=infra/terraform/azure apply
+```
+
+Build the jars and publish the service images through Azure Container Registry:
+
+```powershell
+mvn clean package
+$registry = terraform -chdir=infra/terraform/azure output -raw container_registry_name
+
+az acr build --registry $registry --image ticket-service:latest --file services/ticket-service/Dockerfile services/ticket-service
+az acr build --registry $registry --image technician-service:latest --file services/technician-service/Dockerfile services/technician-service
+az acr build --registry $registry --image notification-service:latest --file services/notification-service/Dockerfile services/notification-service
+```
+
+Enable the Container Apps in `terraform.tfvars`:
+
+```hcl
+deploy_services = true
+```
+
+Apply again and retrieve the public endpoint:
+
+```powershell
+terraform -chdir=infra/terraform/azure apply
+terraform -chdir=infra/terraform/azure output ticket_service_url
+```
+
+The demo configuration uses the smallest burstable PostgreSQL tier and one database server with two logical databases to limit cost. The firewall allows traffic from Azure services. A production setup should use private networking, separate lifecycle policies and remote encrypted Terraform state.
+
+Destroy demo resources when they are no longer needed:
+
+```powershell
+terraform -chdir=infra/terraform/azure destroy
+```
 
 ## Project Structure
 
@@ -210,6 +267,9 @@ observability/
   tempo/
 k8s/
   base/
+infra/
+  terraform/
+    azure/
 compose.yml
 pom.xml
 ```
