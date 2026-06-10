@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: servicedesk
+data:
+  TICKET_DB_URL: jdbc:postgresql://ticket-database:5432/tickets
+  TECHNICIAN_DB_URL: jdbc:postgresql://technician-database:5432/technicians
+  TECHNICIAN_SERVICE_URL: http://technician-service:8082
+  MANAGEMENT_TRACING_ENABLED: "false"

@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: servicedesk
+  labels:
+    app: notification-service
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - name: http
+      port: 8083
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: servicedesk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+        app.kubernetes.io/component: backend
+    spec:
+      containers:
+        - name: notification-service
+          image: servicedesk-cloud-platform-notification-service:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8083
+          env:
+            - name: SERVER_PORT
+              value: "8083"
+            - name: MANAGEMENT_TRACING_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: MANAGEMENT_TRACING_ENABLED
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 20
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

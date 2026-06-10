@@ -155,9 +155,46 @@ Call the assignment endpoint several times. The ticket remains `UNASSIGNED`, whi
 docker compose start technician-service
 ```
 
+## Kubernetes
+
+The `k8s/base` manifests deploy:
+
+- A dedicated `servicedesk` namespace
+- Three Spring Boot Deployments and ClusterIP Services
+- Separate PostgreSQL StatefulSets and persistent volume claims
+- ConfigMap and Secret based configuration
+- Startup, readiness and liveness probes
+- CPU and memory requests and limits
+
+Docker Desktop Kubernetes can use the locally built images directly:
+
+```powershell
+.\scripts\deploy-kubernetes.ps1
+```
+
+Check the rollout:
+
+```powershell
+kubectl get pods,services,pvc -n servicedesk
+```
+
+Expose the Ticket Service locally:
+
+```powershell
+kubectl port-forward service/ticket-service 8281:8081 -n servicedesk
+```
+
+The database credentials in `k8s/base/database-secret.yml` are local demo values. A cloud deployment should inject credentials from a managed secret store instead of committing production secrets.
+
+Remove the local deployment while preserving the Docker images:
+
+```powershell
+kubectl delete -k k8s/base
+```
+
 ## Delivery Roadmap
 
-1. Package all services for Kubernetes with health probes and resource limits.
+1. Deploy the observability stack inside Kubernetes.
 2. Provision a cloud environment using Terraform.
 
 ## Project Structure
@@ -171,6 +208,8 @@ observability/
   grafana/
   prometheus/
   tempo/
+k8s/
+  base/
 compose.yml
 pom.xml
 ```

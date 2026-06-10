@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticket-service
+  namespace: servicedesk
+  labels:
+    app: ticket-service
+spec:
+  selector:
+    app: ticket-service
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-service
+  namespace: servicedesk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticket-service
+  template:
+    metadata:
+      labels:
+        app: ticket-service
+        app.kubernetes.io/component: backend
+    spec:
+      containers:
+        - name: ticket-service
+          image: servicedesk-cloud-platform-ticket-service:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: SERVER_PORT
+              value: "8081"
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: TICKET_DB_URL
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: database-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-credentials
+                  key: password
+            - name: TECHNICIAN_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: TECHNICIAN_SERVICE_URL
+            - name: MANAGEMENT_TRACING_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: MANAGEMENT_TRACING_ENABLED
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 150m
+              memory: 256Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi

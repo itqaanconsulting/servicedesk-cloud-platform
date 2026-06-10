@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticket-database
+  namespace: servicedesk
+  labels:
+    app: ticket-database
+spec:
+  clusterIP: None
+  selector:
+    app: ticket-database
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ticket-database
+  namespace: servicedesk
+spec:
+  serviceName: ticket-database
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticket-database
+  template:
+    metadata:
+      labels:
+        app: ticket-database
+        app.kubernetes.io/component: database
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: tickets
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: database-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-credentials
+                  key: password
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "servicedesk", "-d", "tickets"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "servicedesk", "-d", "tickets"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
