@@ -19,7 +19,7 @@ services:
     build:
       context: services/ticket-service
     ports:
-      - "8081:8081"
+      - "8181:8081"
     environment:
       SERVER_PORT: 8081
       DB_URL: jdbc:postgresql://ticket-database:5432/tickets

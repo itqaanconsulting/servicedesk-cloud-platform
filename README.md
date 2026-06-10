@@ -8,7 +8,7 @@ Cloud-native service desk showcase built as independently deployable Java micros
 
 | Service | Port | Responsibility |
 | --- | ---: | --- |
-| Ticket Service | 8081 | Ticket lifecycle, priority and assignment |
+| Ticket Service | 8181 | Ticket lifecycle, priority and assignment |
 | Technician Service | 8082 | Technician skills, teams and availability |
 | Notification Service | 8083 | Notification delivery and audit history |
 
@@ -53,13 +53,13 @@ mvn -pl services/ticket-service spring-boot:run
 
 Available endpoints:
 
-- `http://localhost:8081/api`
-- `POST http://localhost:8081/api/tickets`
-- `GET http://localhost:8081/api/tickets`
-- `GET http://localhost:8081/api/tickets/{ticketId}`
-- `PATCH http://localhost:8081/api/tickets/{ticketId}/status`
-- `http://localhost:8081/actuator/health`
-- `http://localhost:8081/actuator/prometheus`
+- `http://localhost:8181/api`
+- `POST http://localhost:8181/api/tickets`
+- `GET http://localhost:8181/api/tickets`
+- `GET http://localhost:8181/api/tickets/{ticketId}`
+- `PATCH http://localhost:8181/api/tickets/{ticketId}/status`
+- `http://localhost:8181/actuator/health`
+- `http://localhost:8181/actuator/prometheus`
 
 The technician and notification services expose the same endpoints on ports `8082` and `8083`.
 
@@ -75,7 +75,7 @@ $body = @{
 
 Invoke-RestMethod `
     -Method Post `
-    -Uri http://localhost:8081/api/tickets `
+    -Uri http://localhost:8181/api/tickets `
     -ContentType application/json `
     -Body $body
 ```
