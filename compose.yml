@@ -1,0 +1,24 @@
+services:
+  ticket-service:
+    build:
+      context: services/ticket-service
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+
+  technician-service:
+    build:
+      context: services/technician-service
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: 8082
+
+  notification-service:
+    build:
+      context: services/notification-service
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
