@@ -9,3 +9,7 @@ spring:
       ddl-auto: validate
   flyway:
     locations: classpath:db/migration
+
+management:
+  tracing:
+    enabled: false

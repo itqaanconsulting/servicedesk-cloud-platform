@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: ticket-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["ticket-service:8081"]
+
+  - job_name: technician-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["technician-service:8082"]
+
+  - job_name: notification-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["notification-service:8083"]

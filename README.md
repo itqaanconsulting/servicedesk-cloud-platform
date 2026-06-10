@@ -20,10 +20,20 @@ flowchart LR
     Ticket["Ticket Service"]
     Technician["Technician Service"]
     Notification["Notification Service"]
+    Prometheus["Prometheus"]
+    Tempo["Tempo"]
+    Grafana["Grafana"]
 
     Client --> Ticket
     Ticket --> Technician
     Ticket --> Notification
+    Ticket -. metrics .-> Prometheus
+    Technician -. metrics .-> Prometheus
+    Notification -. metrics .-> Prometheus
+    Ticket -. traces .-> Tempo
+    Technician -. traces .-> Tempo
+    Grafana --> Prometheus
+    Grafana --> Tempo
 ```
 
 Each service owns its domain and database. The Ticket and Technician services persist their data in separate PostgreSQL databases through versioned Flyway migrations. Ticket assignment uses an explicit REST contract with retries, timeouts and a circuit breaker.
@@ -34,11 +44,13 @@ Each service owns its domain and database. The Ticket and Technician services pe
 - Spring Boot 3.5
 - Maven multi-module build
 - Spring Boot Actuator and Prometheus metrics
+- OpenTelemetry distributed tracing
+- Prometheus, Grafana and Tempo
 - Resilience4j
 - Docker Compose
 - GitHub Actions
 
-Planned platform capabilities include OpenTelemetry, Grafana, Kubernetes and Terraform.
+Planned platform capabilities include Kubernetes and Terraform.
 
 ## Build
 
@@ -111,11 +123,42 @@ mvn clean package
 docker compose up --build
 ```
 
+## Observability
+
+The local stack is provisioned automatically:
+
+| Tool | URL | Purpose |
+| --- | --- | --- |
+| Grafana | `http://localhost:3000` | Metrics dashboards and trace exploration |
+| Prometheus | `http://localhost:9090` | Metrics collection and PromQL |
+| Tempo | `http://localhost:3200` | Distributed trace storage |
+
+Grafana credentials are `admin` / `admin`. Open the **ServiceDesk / ServiceDesk Overview** dashboard after generating traffic.
+
+To inspect a distributed trace:
+
+1. Create a technician with the required skill.
+2. Create a ticket and call its assignment endpoint.
+3. Open Grafana **Explore** and select the Tempo datasource.
+4. Search recent traces for `ticket-service`.
+5. Open a trace to see the Ticket Service request and its Technician Service child span.
+
+To demonstrate resilience:
+
+```powershell
+docker compose stop technician-service
+```
+
+Call the assignment endpoint several times. The ticket remains `UNASSIGNED`, while retry and circuit-breaker metrics become visible in Grafana. Restore the service with:
+
+```powershell
+docker compose start technician-service
+```
+
 ## Delivery Roadmap
 
-1. Add distributed tracing and a local observability dashboard.
-2. Package all services for Kubernetes with health probes and resource limits.
-3. Provision a cloud environment using Terraform.
+1. Package all services for Kubernetes with health probes and resource limits.
+2. Provision a cloud environment using Terraform.
 
 ## Project Structure
 
@@ -124,6 +167,10 @@ services/
   ticket-service/
   technician-service/
   notification-service/
+observability/
+  grafana/
+  prometheus/
+  tempo/
 compose.yml
 pom.xml
 ```

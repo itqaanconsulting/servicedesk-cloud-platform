@@ -26,10 +26,13 @@ services:
       DB_USERNAME: servicedesk
       DB_PASSWORD: servicedesk
       TECHNICIAN_SERVICE_URL: http://technician-service:8082
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       ticket-database:
         condition: service_healthy
       technician-service:
+        condition: service_started
+      tempo:
         condition: service_started
 
   technician-database:
@@ -58,9 +61,12 @@ services:
       DB_URL: jdbc:postgresql://technician-database:5432/technicians
       DB_USERNAME: servicedesk
       DB_PASSWORD: servicedesk
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       technician-database:
         condition: service_healthy
+      tempo:
+        condition: service_started
 
   notification-service:
     build:
@@ -69,7 +75,55 @@ services:
       - "8083:8083"
     environment:
       SERVER_PORT: 8083
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
+    depends_on:
+      tempo:
+        condition: service_started
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    command: ["-config.file=/etc/tempo.yml"]
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo.yml:ro
+      - tempo-data:/var/tempo
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - ticket-service
+      - technician-service
+      - notification-service
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - tempo
 
 volumes:
   ticket-data:
   technician-data:
+  tempo-data:
+  prometheus-data:
+  grafana-data:
