@@ -124,6 +124,70 @@ mvn clean package
 docker compose up --build
 ```
 
+## Five-Minute Demo
+
+Start the complete local platform:
+
+```powershell
+mvn clean package
+docker compose up --build -d
+docker compose ps
+```
+
+Wait until the databases and services are ready, then run:
+
+```powershell
+.\scripts\run-demo.ps1
+```
+
+The script:
+
+1. Checks the Ticket and Technician service health endpoints.
+2. Creates an available technician with `NETWORKING`, `JAVA` and `KUBERNETES` skills.
+3. Creates a high-priority VPN incident requiring `NETWORKING`.
+4. Calls the Ticket Service assignment endpoint.
+5. Shows that the ticket changed to `IN_PROGRESS`, assignment became `ASSIGNED` and the technician became `BUSY`.
+
+Example result:
+
+```text
+TicketStatus           : IN_PROGRESS
+AssignmentStatus       : ASSIGNED
+RequiredSkill          : NETWORKING
+AssignedTechnician     : Samira de Vries
+TechnicianAvailability : BUSY
+```
+
+Open Grafana at `http://localhost:3000` and sign in with `admin` / `admin`.
+
+During a presentation:
+
+1. Open **Dashboards > ServiceDesk > ServiceDesk Overview** to show request rates and latency.
+2. Open **Explore**, select **Tempo** and search recent traces for `ticket-service`.
+3. Open the assignment trace to show the Ticket Service span and Technician Service child span.
+4. Run `kubectl get pods,services,pvc -n servicedesk` to explain the equivalent Kubernetes deployment.
+5. Show `infra/terraform/azure` to explain how the same platform is provisioned on Azure.
+
+The core story is that Ticket Service owns the workflow but does not directly modify technician data. It calls Technician Service, which atomically reserves a suitable technician. Retries, timeouts, tracing and metrics make that remote interaction observable and resilient.
+
+To demonstrate failure handling, stop Technician Service:
+
+```powershell
+docker compose stop technician-service
+```
+
+Create another ticket and call its assignment endpoint. The ticket remains unassigned while retry and circuit-breaker metrics appear in Grafana. Restore the service afterwards:
+
+```powershell
+docker compose start technician-service
+```
+
+Stop the local demo when finished:
+
+```powershell
+docker compose down
+```
+
 ## Observability
 
 The local stack is provisioned automatically:
