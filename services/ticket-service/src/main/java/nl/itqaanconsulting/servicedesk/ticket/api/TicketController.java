@@ -2,6 +2,7 @@ package nl.itqaanconsulting.servicedesk.ticket.api;
 
 import jakarta.validation.Valid;
 import nl.itqaanconsulting.servicedesk.ticket.application.TicketService;
+import nl.itqaanconsulting.servicedesk.ticket.application.TicketAssignmentService;
 import nl.itqaanconsulting.servicedesk.ticket.domain.TicketStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,9 +24,11 @@ import java.util.UUID;
 class TicketController {
 
     private final TicketService ticketService;
+    private final TicketAssignmentService ticketAssignmentService;
 
-    TicketController(TicketService ticketService) {
+    TicketController(TicketService ticketService, TicketAssignmentService ticketAssignmentService) {
         this.ticketService = ticketService;
+        this.ticketAssignmentService = ticketAssignmentService;
     }
 
     @PostMapping
@@ -34,7 +37,8 @@ class TicketController {
                 request.title(),
                 request.description(),
                 request.requesterEmail(),
-                request.priority()
+                request.priority(),
+                request.requiredSkill()
         ));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -62,5 +66,10 @@ class TicketController {
             @Valid @RequestBody ChangeTicketStatusRequest request
     ) {
         return TicketResponse.from(ticketService.changeStatus(ticketId, request.status()));
+    }
+
+    @PostMapping("/{ticketId}/assignment")
+    TicketResponse assign(@PathVariable UUID ticketId) {
+        return TicketResponse.from(ticketAssignmentService.assign(ticketId));
     }
 }

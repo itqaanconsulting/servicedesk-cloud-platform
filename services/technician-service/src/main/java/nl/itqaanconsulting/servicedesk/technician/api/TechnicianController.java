@@ -66,4 +66,9 @@ class TechnicianController {
                 technicianService.changeAvailability(technicianId, request.availability())
         );
     }
+
+    @PostMapping("/reservations")
+    TechnicianResponse reserve(@RequestParam String skill) {
+        return TechnicianResponse.from(technicianService.reserve(skill));
+    }
 }

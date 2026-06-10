@@ -13,6 +13,28 @@ spring:
 server:
   port: ${SERVER_PORT:8081}
 
+clients:
+  technician-service:
+    base-url: ${TECHNICIAN_SERVICE_URL:http://localhost:8082}
+    connect-timeout: 500ms
+    read-timeout: 1s
+
+resilience4j:
+  retry:
+    instances:
+      technicianService:
+        max-attempts: 3
+        wait-duration: 200ms
+  circuitbreaker:
+    instances:
+      technicianService:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+
 management:
   endpoints:
     web:

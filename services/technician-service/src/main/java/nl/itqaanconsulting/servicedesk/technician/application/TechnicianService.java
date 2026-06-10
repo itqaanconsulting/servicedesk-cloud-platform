@@ -3,6 +3,7 @@ package nl.itqaanconsulting.servicedesk.technician.application;
 import nl.itqaanconsulting.servicedesk.technician.domain.Availability;
 import nl.itqaanconsulting.servicedesk.technician.domain.Technician;
 import nl.itqaanconsulting.servicedesk.technician.domain.TechnicianRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +49,17 @@ public class TechnicianService {
     public Technician changeAvailability(UUID technicianId, Availability availability) {
         Technician technician = get(technicianId);
         technician.changeAvailability(availability);
+        return technician;
+    }
+
+    @Transactional
+    public Technician reserve(String skill) {
+        Technician technician = technicianRepository
+                .findAvailableForReservation(skill.trim(), PageRequest.of(0, 1))
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new NoAvailableTechnicianException(skill));
+        technician.changeAvailability(Availability.BUSY);
         return technician;
     }
 }

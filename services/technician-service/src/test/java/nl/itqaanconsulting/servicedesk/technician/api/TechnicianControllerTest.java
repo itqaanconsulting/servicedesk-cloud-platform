@@ -101,6 +101,20 @@ class TechnicianControllerTest {
                 .andExpect(jsonPath("$.fieldErrors.skills").exists());
     }
 
+    @Test
+    void reservesTechnicianAndMarksThemBusy() throws Exception {
+        UUID technicianId = createTechnician("samira@example.com");
+
+        mockMvc.perform(post("/api/technicians/reservations").param("skill", "JAVA"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(technicianId.toString()))
+                .andExpect(jsonPath("$.availability").value("BUSY"));
+
+        mockMvc.perform(post("/api/technicians/reservations").param("skill", "JAVA"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("No available technician found for skill JAVA"));
+    }
+
     private UUID createTechnician(String email) throws Exception {
         String response = mockMvc.perform(post("/api/technicians")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -2,6 +2,7 @@ package nl.itqaanconsulting.servicedesk.technician.api;
 
 import jakarta.servlet.http.HttpServletRequest;
 import nl.itqaanconsulting.servicedesk.technician.application.DuplicateTechnicianException;
+import nl.itqaanconsulting.servicedesk.technician.application.NoAvailableTechnicianException;
 import nl.itqaanconsulting.servicedesk.technician.application.TechnicianNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,14 @@ class ApiExceptionHandler {
             HttpServletRequest request
     ) {
         return error(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(NoAvailableTechnicianException.class)
+    ResponseEntity<ApiError> handleNoAvailableTechnician(
+            NoAvailableTechnicianException exception,
+            HttpServletRequest request
+    ) {
+        return error(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), Map.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

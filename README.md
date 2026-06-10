@@ -26,7 +26,7 @@ flowchart LR
     Ticket --> Notification
 ```
 
-Each service owns its domain and database. The Ticket and Technician services persist their data in separate PostgreSQL databases through versioned Flyway migrations. Calls between services remain explicit REST contracts.
+Each service owns its domain and database. The Ticket and Technician services persist their data in separate PostgreSQL databases through versioned Flyway migrations. Ticket assignment uses an explicit REST contract with retries, timeouts and a circuit breaker.
 
 ## Technology
 
@@ -34,10 +34,11 @@ Each service owns its domain and database. The Ticket and Technician services pe
 - Spring Boot 3.5
 - Maven multi-module build
 - Spring Boot Actuator and Prometheus metrics
+- Resilience4j
 - Docker Compose
 - GitHub Actions
 
-Planned platform capabilities include PostgreSQL, Flyway, Resilience4j, OpenTelemetry, Prometheus, Grafana, Kubernetes and Terraform.
+Planned platform capabilities include OpenTelemetry, Grafana, Kubernetes and Terraform.
 
 ## Build
 
@@ -58,6 +59,7 @@ Available endpoints:
 - `GET http://localhost:8181/api/tickets`
 - `GET http://localhost:8181/api/tickets/{ticketId}`
 - `PATCH http://localhost:8181/api/tickets/{ticketId}/status`
+- `POST http://localhost:8181/api/tickets/{ticketId}/assignment`
 - `http://localhost:8181/actuator/health`
 - `http://localhost:8181/actuator/prometheus`
 
@@ -70,6 +72,7 @@ Technician endpoints:
 - `GET http://localhost:8082/api/technicians?skill=JAVA&availability=AVAILABLE`
 - `GET http://localhost:8082/api/technicians/{technicianId}`
 - `PATCH http://localhost:8082/api/technicians/{technicianId}/availability`
+- `POST http://localhost:8082/api/technicians/reservations?skill=JAVA`
 
 Create a ticket:
 
@@ -79,6 +82,7 @@ $body = @{
     description = "Remote employee cannot connect to the corporate VPN."
     requesterEmail = "alex@example.com"
     priority = "HIGH"
+    requiredSkill = "NETWORKING"
 } | ConvertTo-Json
 
 Invoke-RestMethod `
@@ -87,6 +91,16 @@ Invoke-RestMethod `
     -ContentType application/json `
     -Body $body
 ```
+
+## Assignment Flow
+
+1. Create a ticket with `requiredSkill`.
+2. Call `POST /api/tickets/{ticketId}/assignment`.
+3. Ticket Service asks Technician Service to atomically reserve an available technician.
+4. A successful assignment moves the ticket to `IN_PROGRESS` and the technician to `BUSY`.
+5. If no technician is available, or the remote service times out, the ticket remains `UNASSIGNED`.
+
+The Technician Service call has a 500 ms connection timeout, a one-second response timeout, three retry attempts and a circuit breaker. Resilience metrics are exposed through the Ticket Service Prometheus endpoint.
 
 ## Run with Docker
 
@@ -99,10 +113,9 @@ docker compose up --build
 
 ## Delivery Roadmap
 
-1. Add synchronous ticket assignment with timeout, retry and circuit breaker behavior.
-2. Add distributed tracing and a local observability dashboard.
-3. Package all services for Kubernetes with health probes and resource limits.
-4. Provision a cloud environment using Terraform.
+1. Add distributed tracing and a local observability dashboard.
+2. Package all services for Kubernetes with health probes and resource limits.
+3. Provision a cloud environment using Terraform.
 
 ## Project Structure
 

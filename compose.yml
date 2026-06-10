@@ -25,9 +25,12 @@ services:
       DB_URL: jdbc:postgresql://ticket-database:5432/tickets
       DB_USERNAME: servicedesk
       DB_PASSWORD: servicedesk
+      TECHNICIAN_SERVICE_URL: http://technician-service:8082
     depends_on:
       ticket-database:
         condition: service_healthy
+      technician-service:
+        condition: service_started
 
   technician-database:
     image: postgres:17-alpine

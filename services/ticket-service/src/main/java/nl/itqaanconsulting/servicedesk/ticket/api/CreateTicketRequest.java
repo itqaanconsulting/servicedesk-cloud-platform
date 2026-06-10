@@ -10,6 +10,7 @@ record CreateTicketRequest(
         @NotBlank @Size(max = 120) String title,
         @NotBlank @Size(max = 2000) String description,
         @NotBlank @Email @Size(max = 254) String requesterEmail,
-        @NotNull TicketPriority priority
+        @NotNull TicketPriority priority,
+        @NotBlank @Size(max = 80) String requiredSkill
 ) {
 }
