@@ -26,7 +26,7 @@ flowchart LR
     Ticket --> Notification
 ```
 
-Each service owns its domain and will receive its own PostgreSQL database. Calls between services remain explicit REST contracts. Resilience, tracing and metrics will be added around those calls.
+Each service owns its domain and database. The Ticket Service currently persists tickets in PostgreSQL through versioned Flyway migrations. Calls between services remain explicit REST contracts.
 
 ## Technology
 
@@ -54,10 +54,31 @@ mvn -pl services/ticket-service spring-boot:run
 Available endpoints:
 
 - `http://localhost:8081/api`
+- `POST http://localhost:8081/api/tickets`
+- `GET http://localhost:8081/api/tickets`
+- `GET http://localhost:8081/api/tickets/{ticketId}`
+- `PATCH http://localhost:8081/api/tickets/{ticketId}/status`
 - `http://localhost:8081/actuator/health`
 - `http://localhost:8081/actuator/prometheus`
 
 The technician and notification services expose the same endpoints on ports `8082` and `8083`.
+
+Create a ticket:
+
+```powershell
+$body = @{
+    title = "VPN access unavailable"
+    description = "Remote employee cannot connect to the corporate VPN."
+    requesterEmail = "alex@example.com"
+    priority = "HIGH"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Method Post `
+    -Uri http://localhost:8081/api/tickets `
+    -ContentType application/json `
+    -Body $body
+```
 
 ## Run with Docker
 
@@ -70,7 +91,7 @@ docker compose up --build
 
 ## Delivery Roadmap
 
-1. Implement ticket and technician persistence with separate PostgreSQL databases.
+1. Implement technician persistence with a separate PostgreSQL database.
 2. Add synchronous ticket assignment with timeout, retry and circuit breaker behavior.
 3. Add distributed tracing and a local observability dashboard.
 4. Package all services for Kubernetes with health probes and resource limits.
