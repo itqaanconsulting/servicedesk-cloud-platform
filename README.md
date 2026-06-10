@@ -26,7 +26,7 @@ flowchart LR
     Ticket --> Notification
 ```
 
-Each service owns its domain and database. The Ticket Service currently persists tickets in PostgreSQL through versioned Flyway migrations. Calls between services remain explicit REST contracts.
+Each service owns its domain and database. The Ticket and Technician services persist their data in separate PostgreSQL databases through versioned Flyway migrations. Calls between services remain explicit REST contracts.
 
 ## Technology
 
@@ -63,6 +63,14 @@ Available endpoints:
 
 The technician and notification services expose the same endpoints on ports `8082` and `8083`.
 
+Technician endpoints:
+
+- `POST http://localhost:8082/api/technicians`
+- `GET http://localhost:8082/api/technicians`
+- `GET http://localhost:8082/api/technicians?skill=JAVA&availability=AVAILABLE`
+- `GET http://localhost:8082/api/technicians/{technicianId}`
+- `PATCH http://localhost:8082/api/technicians/{technicianId}/availability`
+
 Create a ticket:
 
 ```powershell
@@ -91,11 +99,10 @@ docker compose up --build
 
 ## Delivery Roadmap
 
-1. Implement technician persistence with a separate PostgreSQL database.
-2. Add synchronous ticket assignment with timeout, retry and circuit breaker behavior.
-3. Add distributed tracing and a local observability dashboard.
-4. Package all services for Kubernetes with health probes and resource limits.
-5. Provision a cloud environment using Terraform.
+1. Add synchronous ticket assignment with timeout, retry and circuit breaker behavior.
+2. Add distributed tracing and a local observability dashboard.
+3. Package all services for Kubernetes with health probes and resource limits.
+4. Provision a cloud environment using Terraform.
 
 ## Project Structure
 
