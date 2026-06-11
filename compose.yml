@@ -26,11 +26,14 @@ services:
       DB_USERNAME: servicedesk
       DB_PASSWORD: servicedesk
       TECHNICIAN_SERVICE_URL: http://technician-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8083
       OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       ticket-database:
         condition: service_healthy
       technician-service:
+        condition: service_started
+      notification-service:
         condition: service_started
       tempo:
         condition: service_started

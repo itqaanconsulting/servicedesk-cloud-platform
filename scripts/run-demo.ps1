@@ -1,6 +1,7 @@
 param(
     [string]$TicketServiceUrl = "http://localhost:8181",
-    [string]$TechnicianServiceUrl = "http://localhost:8082"
+    [string]$TechnicianServiceUrl = "http://localhost:8082",
+    [string]$NotificationServiceUrl = "http://localhost:8083"
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,6 +31,7 @@ function Wait-ForService {
 
 Wait-ForService -Name "Ticket Service" -HealthUrl "$TicketServiceUrl/actuator/health"
 Wait-ForService -Name "Technician Service" -HealthUrl "$TechnicianServiceUrl/actuator/health"
+Wait-ForService -Name "Notification Service" -HealthUrl "$NotificationServiceUrl/actuator/health"
 
 $demoId = Get-Date -Format "yyyyMMddHHmmss"
 
@@ -66,6 +68,10 @@ $assignedTicket = Invoke-RestMethod `
 $reservedTechnician = Invoke-RestMethod `
     -Uri "$TechnicianServiceUrl/api/technicians/$($technician.id)"
 
+$notification = Invoke-RestMethod -Uri "$NotificationServiceUrl/api/notifications" |
+    Where-Object { $_.ticketId -eq $assignedTicket.id } |
+    Select-Object -First 1
+
 Write-Host ""
 Write-Host "Demo completed."
 Write-Host ""
@@ -77,6 +83,8 @@ Write-Host ""
     RequiredSkill          = $assignedTicket.requiredSkill
     AssignedTechnician     = $assignedTicket.assignedTechnicianName
     TechnicianAvailability = $reservedTechnician.availability
+    NotificationStatus     = $notification.status
+    NotificationRecipient  = $notification.recipient
 } | Format-List
 
 Write-Host "Grafana dashboard: http://localhost:3000/d/servicedesk-overview"

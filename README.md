@@ -11,7 +11,7 @@ Cloud-native service desk showcase built as independently deployable Java micros
 | --- | ---: | --- |
 | Ticket Service | 8181 | Ticket lifecycle, priority and assignment |
 | Technician Service | 8082 | Technician skills, teams and availability |
-| Notification Service | 8083 | Notification delivery and audit history |
+| Notification Service | 8083 | Assignment notifications, delivery status and audit history |
 
 ## Architecture
 
@@ -111,9 +111,10 @@ Invoke-RestMethod `
 2. Call `POST /api/tickets/{ticketId}/assignment`.
 3. Ticket Service asks Technician Service to atomically reserve an available technician.
 4. A successful assignment moves the ticket to `IN_PROGRESS` and the technician to `BUSY`.
-5. If no technician is available, or the remote service times out, the ticket remains `UNASSIGNED`.
+5. Ticket Service sends a requester notification and Notification Service records the delivery result.
+6. If no technician is available, or the remote service times out, the ticket remains `UNASSIGNED`.
 
-The Technician Service call has a 500 ms connection timeout, a one-second response timeout, three retry attempts and a circuit breaker. Resilience metrics are exposed through the Ticket Service Prometheus endpoint.
+The Technician and Notification Service calls use explicit timeouts, retry policies and circuit breakers. Notification failure never rolls back a completed assignment. Resilience metrics are exposed through the Ticket Service Prometheus endpoint.
 
 ## Run with Docker
 
@@ -146,7 +147,7 @@ The script:
 2. Creates an available technician with `NETWORKING`, `JAVA` and `KUBERNETES` skills.
 3. Creates a high-priority VPN incident requiring `NETWORKING`.
 4. Calls the Ticket Service assignment endpoint.
-5. Shows that the ticket changed to `IN_PROGRESS`, assignment became `ASSIGNED` and the technician became `BUSY`.
+5. Shows that the ticket changed to `IN_PROGRESS`, assignment became `ASSIGNED`, the technician became `BUSY` and a requester notification was delivered.
 
 Example result:
 

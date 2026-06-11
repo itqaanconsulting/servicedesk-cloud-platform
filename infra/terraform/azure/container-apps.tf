@@ -253,6 +253,10 @@ resource "azurerm_container_app" "ticket" {
         value = "https://${azurerm_container_app.technician[0].latest_revision_fqdn}"
       }
       env {
+        name  = "NOTIFICATION_SERVICE_URL"
+        value = "https://${azurerm_container_app.notification[0].latest_revision_fqdn}"
+      }
+      env {
         name  = "MANAGEMENT_TRACING_ENABLED"
         value = "false"
       }

@@ -4,6 +4,7 @@ import nl.itqaanconsulting.servicedesk.ticket.domain.AssignmentStatus;
 import nl.itqaanconsulting.servicedesk.ticket.domain.Ticket;
 import nl.itqaanconsulting.servicedesk.ticket.integration.TechnicianClient;
 import nl.itqaanconsulting.servicedesk.ticket.integration.TechnicianReservation;
+import nl.itqaanconsulting.servicedesk.ticket.integration.NotificationClient;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -14,10 +15,16 @@ public class TicketAssignmentService {
 
     private final TicketService ticketService;
     private final TechnicianClient technicianClient;
+    private final NotificationClient notificationClient;
 
-    public TicketAssignmentService(TicketService ticketService, TechnicianClient technicianClient) {
+    public TicketAssignmentService(
+            TicketService ticketService,
+            TechnicianClient technicianClient,
+            NotificationClient notificationClient
+    ) {
         this.ticketService = ticketService;
         this.technicianClient = technicianClient;
+        this.notificationClient = notificationClient;
     }
 
     public Ticket assign(UUID ticketId) {
@@ -27,8 +34,12 @@ public class TicketAssignmentService {
         }
 
         Optional<TechnicianReservation> reservation = technicianClient.reserve(ticket.getRequiredSkill());
-        return reservation
-                .map(technician -> ticketService.assign(ticketId, technician))
-                .orElse(ticket);
+        if (reservation.isEmpty()) {
+            return ticket;
+        }
+
+        Ticket assignedTicket = ticketService.assign(ticketId, reservation.get());
+        notificationClient.sendAssignment(assignedTicket);
+        return assignedTicket;
     }
 }

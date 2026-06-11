@@ -14,12 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import nl.itqaanconsulting.servicedesk.ticket.integration.TechnicianClient;
 import nl.itqaanconsulting.servicedesk.ticket.integration.TechnicianReservation;
+import nl.itqaanconsulting.servicedesk.ticket.integration.NotificationClient;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -41,6 +43,9 @@ class TicketControllerTest {
 
     @MockitoBean
     private TechnicianClient technicianClient;
+
+    @MockitoBean
+    private NotificationClient notificationClient;
 
     @Test
     void createsAndReturnsTicket() throws Exception {
@@ -122,6 +127,11 @@ class TicketControllerTest {
                 .andExpect(jsonPath("$.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.assignedTechnicianId").value(technicianId.toString()))
                 .andExpect(jsonPath("$.assignedTechnicianName").value("Samira de Vries"));
+
+        verify(notificationClient).sendAssignment(org.mockito.ArgumentMatchers.argThat(
+                ticket -> ticketId.equals(ticket.getId())
+                        && "samira@example.com".equals(ticket.getAssignedTechnicianEmail())
+        ));
     }
 
     @Test
