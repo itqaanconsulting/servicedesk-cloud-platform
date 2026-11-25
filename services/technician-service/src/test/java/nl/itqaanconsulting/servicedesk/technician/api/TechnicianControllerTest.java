@@ -1,10 +1,10 @@
 package nl.itqaanconsulting.servicedesk.technician.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -126,7 +126,7 @@ class TechnicianControllerTest {
                                 .header("Idempotency-Key", ticketId))
                         .andExpect(status().isOk())
                         .andReturn().getResponse().getContentAsString())
-                .get("id").asText();
+                .get("id").asString();
 
         // A retry after a timeout must return the same technician, not reserve the second one.
         mockMvc.perform(post("/api/technicians/reservations")
@@ -167,7 +167,7 @@ class TechnicianControllerTest {
                 .getResponse()
                 .getContentAsString();
         JsonNode technician = objectMapper.readTree(response);
-        return UUID.fromString(technician.get("id").asText());
+        return UUID.fromString(technician.get("id").asString());
     }
 
     private String validTechnicianJson(String email) {
