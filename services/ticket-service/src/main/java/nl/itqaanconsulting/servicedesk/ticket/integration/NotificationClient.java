@@ -3,12 +3,16 @@ package nl.itqaanconsulting.servicedesk.ticket.integration;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import nl.itqaanconsulting.servicedesk.ticket.domain.Ticket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
 public class NotificationClient {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationClient.class);
 
     private final RestClient restClient;
 
@@ -27,6 +31,9 @@ public class NotificationClient {
     }
 
     public void fallback(Ticket ticket, Throwable exception) {
-        // Notification delivery must not roll back a completed technician assignment.
+        // Notification delivery must not roll back a completed technician assignment,
+        // but a lost notification has to be visible to operations.
+        log.warn("Assignment notification for ticket {} could not be delivered: {}",
+                ticket.getId(), exception.toString());
     }
 }

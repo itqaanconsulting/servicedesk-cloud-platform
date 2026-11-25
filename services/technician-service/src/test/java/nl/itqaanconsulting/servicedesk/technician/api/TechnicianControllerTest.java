@@ -115,6 +115,49 @@ class TechnicianControllerTest {
                 .andExpect(jsonPath("$.message").value("No available technician found for skill JAVA"));
     }
 
+    @Test
+    void returnsSameTechnicianWhenReservationIsRetriedWithSameKey() throws Exception {
+        createTechnician("samira@example.com");
+        createTechnician("ahmed@example.com");
+        String ticketId = UUID.randomUUID().toString();
+
+        String reservedId = objectMapper.readTree(mockMvc.perform(post("/api/technicians/reservations")
+                                .param("skill", "JAVA")
+                                .header("Idempotency-Key", ticketId))
+                        .andExpect(status().isOk())
+                        .andReturn().getResponse().getContentAsString())
+                .get("id").asText();
+
+        // A retry after a timeout must return the same technician, not reserve the second one.
+        mockMvc.perform(post("/api/technicians/reservations")
+                        .param("skill", "JAVA")
+                        .header("Idempotency-Key", ticketId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(reservedId));
+
+        mockMvc.perform(get("/api/technicians").param("availability", "AVAILABLE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void releasesReservationKeyWhenTechnicianBecomesAvailableAgain() throws Exception {
+        UUID technicianId = createTechnician("samira@example.com");
+        String firstTicket = UUID.randomUUID().toString();
+
+        mockMvc.perform(post("/api/technicians/reservations").param("skill", "JAVA").header("Idempotency-Key", firstTicket))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/technicians/{id}/availability", technicianId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"availability\": \"AVAILABLE\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/technicians/reservations").param("skill", "JAVA").header("Idempotency-Key", UUID.randomUUID().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(technicianId.toString()))
+                .andExpect(jsonPath("$.availability").value("BUSY"));
+    }
+
     private UUID createTechnician(String email) throws Exception {
         String response = mockMvc.perform(post("/api/technicians")
                         .contentType(MediaType.APPLICATION_JSON)

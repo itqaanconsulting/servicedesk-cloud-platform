@@ -85,7 +85,7 @@ Technician endpoints:
 - `GET http://localhost:8082/api/technicians?skill=JAVA&availability=AVAILABLE`
 - `GET http://localhost:8082/api/technicians/{technicianId}`
 - `PATCH http://localhost:8082/api/technicians/{technicianId}/availability`
-- `POST http://localhost:8082/api/technicians/reservations?skill=JAVA`
+- `POST http://localhost:8082/api/technicians/reservations?skill=JAVA` (optional header `Idempotency-Key`)
 
 Create a ticket:
 
@@ -114,7 +114,7 @@ Invoke-RestMethod `
 5. Ticket Service sends a requester notification and Notification Service records the delivery result.
 6. If no technician is available, or the remote service times out, the ticket remains `UNASSIGNED`.
 
-The Technician and Notification Service calls use explicit timeouts, retry policies and circuit breakers. Notification failure never rolls back a completed assignment. Resilience metrics are exposed through the Ticket Service Prometheus endpoint.
+The Technician and Notification Service calls use explicit timeouts, retry policies and circuit breakers. Because a reservation is a POST, retrying it is only safe when it is idempotent: Ticket Service sends the ticket ID as `Idempotency-Key`, and Technician Service returns the existing reservation for a known key instead of reserving a second technician. The key is released when the technician becomes available again. The same mechanism makes a failed assignment safe to repeat. Notification failure never rolls back a completed assignment; it is logged as a warning. Resilience metrics are exposed through the Ticket Service Prometheus endpoint.
 
 ## Run with Docker
 

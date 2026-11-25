@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface TechnicianRepository extends JpaRepository<Technician, UUID> {
@@ -30,6 +31,8 @@ public interface TechnicianRepository extends JpaRepository<Technician, UUID> {
     );
 
     List<Technician> findAllByOrderByName();
+
+    Optional<Technician> findByReservationKey(String reservationKey);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

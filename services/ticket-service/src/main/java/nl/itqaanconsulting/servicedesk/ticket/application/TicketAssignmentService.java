@@ -33,7 +33,7 @@ public class TicketAssignmentService {
             return ticket;
         }
 
-        Optional<TechnicianReservation> reservation = technicianClient.reserve(ticket.getRequiredSkill());
+        Optional<TechnicianReservation> reservation = technicianClient.reserve(ticket.getRequiredSkill(), ticketId);
         if (reservation.isEmpty()) {
             return ticket;
         }
