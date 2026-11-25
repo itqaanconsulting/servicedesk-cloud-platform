@@ -40,6 +40,10 @@ public class Technician {
     @Column(name = "skill", nullable = false, length = 80)
     private Set<String> skills = new LinkedHashSet<>();
 
+    /** Idempotency key of the reservation that made this technician BUSY (the ticket id). */
+    @Column(name = "reservation_key", unique = true, length = 100)
+    private String reservationKey;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -60,6 +64,15 @@ public class Technician {
 
     public void changeAvailability(Availability availability) {
         this.availability = availability;
+        if (availability == Availability.AVAILABLE) {
+            this.reservationKey = null;
+        }
+        this.updatedAt = Instant.now();
+    }
+
+    public void reserve(String reservationKey) {
+        this.availability = Availability.BUSY;
+        this.reservationKey = reservationKey;
         this.updatedAt = Instant.now();
     }
 

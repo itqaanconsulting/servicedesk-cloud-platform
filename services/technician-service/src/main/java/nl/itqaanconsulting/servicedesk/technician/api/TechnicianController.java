@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -68,7 +69,10 @@ class TechnicianController {
     }
 
     @PostMapping("/reservations")
-    TechnicianResponse reserve(@RequestParam String skill) {
-        return TechnicianResponse.from(technicianService.reserve(skill));
+    TechnicianResponse reserve(
+            @RequestParam String skill,
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey
+    ) {
+        return TechnicianResponse.from(technicianService.reserve(skill, idempotencyKey));
     }
 }

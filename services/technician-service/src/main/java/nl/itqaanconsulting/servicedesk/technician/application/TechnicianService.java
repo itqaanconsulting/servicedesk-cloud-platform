@@ -53,13 +53,20 @@ public class TechnicianService {
     }
 
     @Transactional
-    public Technician reserve(String skill) {
+    public Technician reserve(String skill, String reservationKey) {
+        if (reservationKey != null && !reservationKey.isBlank()) {
+            // Idempotent retry: a repeated request with the same key returns the original reservation.
+            var existing = technicianRepository.findByReservationKey(reservationKey);
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+        }
         Technician technician = technicianRepository
                 .findAvailableForReservation(skill.trim(), PageRequest.of(0, 1))
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new NoAvailableTechnicianException(skill));
-        technician.changeAvailability(Availability.BUSY);
+        technician.reserve(reservationKey == null || reservationKey.isBlank() ? null : reservationKey);
         return technician;
     }
 }

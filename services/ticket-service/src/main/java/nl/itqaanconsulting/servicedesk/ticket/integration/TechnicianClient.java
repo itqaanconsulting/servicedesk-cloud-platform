@@ -9,9 +9,12 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class TechnicianClient {
+
+    static final String IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
 
     private final RestClient restClient;
 
@@ -21,13 +24,16 @@ public class TechnicianClient {
 
     @Retry(name = "technicianService")
     @CircuitBreaker(name = "technicianService", fallbackMethod = "fallback")
-    public Optional<TechnicianReservation> reserve(String skill) {
+    public Optional<TechnicianReservation> reserve(String skill, UUID ticketId) {
         try {
+            // The ticket id is the idempotency key: a retry after a timeout returns the same
+            // technician instead of reserving a second one.
             TechnicianReservation reservation = restClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/api/technicians/reservations")
                             .queryParam("skill", skill)
                             .build())
+                    .header(IDEMPOTENCY_KEY_HEADER, ticketId.toString())
                     .retrieve()
                     .body(TechnicianReservation.class);
             return Optional.ofNullable(reservation);
@@ -39,7 +45,7 @@ public class TechnicianClient {
         }
     }
 
-    public Optional<TechnicianReservation> fallback(String skill, Throwable exception) {
+    public Optional<TechnicianReservation> fallback(String skill, UUID ticketId, Throwable exception) {
         return Optional.empty();
     }
 }

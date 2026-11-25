@@ -114,7 +114,7 @@ class TicketControllerTest {
     void assignsAvailableTechnician() throws Exception {
         UUID ticketId = createTicket();
         UUID technicianId = UUID.randomUUID();
-        when(technicianClient.reserve(eq("NETWORKING")))
+        when(technicianClient.reserve(eq("NETWORKING"), eq(ticketId)))
                 .thenReturn(Optional.of(new TechnicianReservation(
                         technicianId,
                         "Samira de Vries",
@@ -137,7 +137,7 @@ class TicketControllerTest {
     @Test
     void keepsTicketUnassignedWhenTechnicianServiceIsUnavailable() throws Exception {
         UUID ticketId = createTicket();
-        when(technicianClient.reserve(eq("NETWORKING"))).thenReturn(Optional.empty());
+        when(technicianClient.reserve(eq("NETWORKING"), eq(ticketId))).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/tickets/{ticketId}/assignment", ticketId))
                 .andExpect(status().isOk())
