@@ -42,7 +42,7 @@ Each service owns its domain and database. The Ticket and Technician services pe
 ## Technology
 
 - Java 21
-- Spring Boot 3.5
+- Spring Boot 4.1
 - Maven multi-module build
 - Spring Boot Actuator and Prometheus metrics
 - OpenTelemetry distributed tracing

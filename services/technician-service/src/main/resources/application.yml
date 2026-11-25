@@ -17,9 +17,16 @@ management:
   tracing:
     sampling:
       probability: 1.0
-  otlp:
+  opentelemetry:
     tracing:
-      endpoint: ${OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}
+      export:
+        otlp:
+          endpoint: ${OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}
+  # Traces go over OTLP; metrics stay on the Prometheus endpoint.
+  otlp:
+    metrics:
+      export:
+        enabled: false
   metrics:
     tags:
       application: ${spring.application.name}
